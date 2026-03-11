@@ -1,0 +1,41 @@
+name: SCORCH Train + Release
+
+on:
+  workflow_dispatch:
+
+jobs:
+  train:
+    runs-on: ubuntu-latest
+    timeout-minutes: 340
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - name: Install dependencies
+        run: |
+          pip install torch --index-url https://download.pytorch.org/whl/cpu
+          pip install datasets requests beautifulsoup4 scikit-learn tqdm xerv-crayon
+
+      - name: Train SCORCH
+        run: python scorch_train.py
+
+      - name: Upload model as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: scorch-model
+          path: scorch_best.pt
+          retention-days: 90
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: scorch-v1
+          files: scorch_best.pt
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
