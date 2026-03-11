@@ -141,7 +141,7 @@ class SCORCHTokenizer:
 
 
 tokenizer  = SCORCHTokenizer(profile="standard")
-VOCAB_SIZE = tokenizer.vocab_size
+VOCAB_SIZE = min(tokenizer.vocab_size, 32768) 
 PAD_ID     = tokenizer.pad_id
 BOS_ID     = tokenizer.bos_id
 EOS_ID     = tokenizer.eos_id
@@ -1996,9 +1996,9 @@ def compute_loss(model, logits, dec_target, hidden, kappa, rho,
 # ==============================================================
 
 MODEL_CONFIG = dict(
-    vocab_size=VOCAB_SIZE, d=256, d_pos=32,
-    n_enc=3, n_dec=4, K_route=8, K_anchors=8,
-    M_slots=32, d_mem=64, max_len=256, lambda_kappa=0.05,
+    vocab_size=VOCAB_SIZE, d=128, d_pos=16,
+    n_enc=2, n_dec=2, K_route=4, K_anchors=4,
+    M_slots=16, d_mem=32, max_len=128, lambda_kappa=0.05,
 )
 model = SCORCH(**MODEL_CONFIG)
 
@@ -2050,11 +2050,11 @@ def set_lr(optim, lr):
 
 PHASE1_END  = 4000
 PHASE2_END  = 16000
-TOTAL_STEPS = 8000
+TOTAL_STEPS = 4000
 WARMUP      = 1000
-LOG_EVERY   = 200
-EVAL_EVERY  = 2000
-SAVE_EVERY  = 500
+LOG_EVERY   = 50
+EVAL_EVERY  = 500
+SAVE_EVERY  = 1000
 GRAD_CLIP   = 1.0
 
 def get_phase(step):
