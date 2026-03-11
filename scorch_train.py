@@ -98,7 +98,7 @@ class SCORCHTokenizer:
                     max_id = max(max_id, max(ids))
             except Exception:
                 pass
-        self.vocab_size = max_id + 1024
+        self.vocab_size = 32768  
         print(f"[SCORCHTokenizer] Probed vocab size: {self.vocab_size}")
 
     def encode(self, text: str):
@@ -1436,7 +1436,10 @@ def filter_and_tokenize_pairs(raw_pairs, tokenizer_obj,
 
 print("Starting data pipeline...")
 raw_pairs      = load_all_datasets()
-filtered_pairs = filter_and_tokenize_pairs(raw_pairs, tokenizer)
+filtered_pairs = filter_and_tokenize_pairs(
+    raw_pairs, tokenizer,
+    max_inp=120, max_out=80, min_out=3   
+)
 
 random.shuffle(filtered_pairs)
 n_total = len(filtered_pairs)
