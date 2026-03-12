@@ -3,6 +3,9 @@ name: SCORCH Train + Release
 on:
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   train:
     runs-on: ubuntu-latest
@@ -24,8 +27,10 @@ jobs:
 
       - name: Train SCORCH
         run: python scorch_train.py
+        env:
+          TOTAL_STEPS: "8000"
 
-      - name: Upload model as artifact
+      - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: scorch-model
@@ -35,7 +40,8 @@ jobs:
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: scorch-v1
-          files: scorch_best.pt
+          tag_name: scorch-v2
+          files: |
+            scorch_best.pt
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
