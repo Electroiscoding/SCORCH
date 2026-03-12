@@ -1009,61 +1009,36 @@ def generate_synthetic_roast_pairs():
 
 from datasets import load_dataset
 
-# ── D1: joke_explaination — real jokes, HF verified ──────────
-def load_d1_jokes():
+# ── D1: OpenHermes-2.5-Filtered (instruction-response pairs, adapt for roasts) ──────────
+def load_d1_openhermes():
     """
-    Uses 'mikeg/jokes' — simple, verified, no scripts.
-    Falls back to 'Abirate/english_quotes' comedy subset.
-    Both are plain Parquet on HF, no trust_remote_code needed.
+    Load Replete-AI/OpenHermes-2.5-Filtered for instruction-based roast prompts.
+    Adapt instruction-response pairs to roast format.
     """
-    print("\n[D1] Loading jokes dataset...")
+    print("\n[D1] Loading OpenHermes-2.5-Filtered dataset...")
     pairs = []
-    tried = [
-        ("mikeg/jokes",          "train", "setup",    "punchline"),
-        ("alkson/jokes",         "train", "setup",    "punchline"),
-        ("cblanchet/jokes",      "train", "question", "answer"),
-    ]
-    for ds_name, split, q_col, a_col in tried:
-        try:
-            ds = load_dataset(ds_name, split=split)
-            for item in ds:
-                q = str(item.get(q_col, "") or "").strip()
-                a = str(item.get(a_col, "") or "").strip()
-                if len(q) >= 8 and len(a) >= 8:
-                    pairs.append((q, a))
-            if pairs:
-                print(f"  [D1] {ds_name}: {len(pairs):,} pairs")
+    try:
+        ds = load_dataset("Replete-AI/OpenHermes-2.5-Filtered", split="train", streaming=True)
+        count = 0
+        for item in ds:
+            if len(pairs) >= 10000:  # Cap at 10K
                 break
-        except Exception as e:
-            print(f"  [D1] {ds_name} failed: {e}")
-
-    if not pairs:
-        # Hardcoded fallback — always works
-        pairs = [
-            ("Why do scientists not trust atoms?", "Because they make up everything."),
-            ("What do you call a fake noodle?", "An impasta."),
-            ("Why did the scarecrow win an award?", "He was outstanding in his field."),
-            ("What do you call cheese that is not yours?", "Nacho cheese."),
-            ("Why can't you give Elsa a balloon?", "She will let it go."),
-            ("What do you call a sleeping dinosaur?", "A dino-snore."),
-            ("Why did the bicycle fall over?", "Because it was two-tired."),
-            ("What do you call a fish without eyes?", "A fsh."),
-            ("Why do eggs not tell jokes?", "They would crack each other up."),
-            ("What do you call a man with a rubber toe?", "Roberto."),
-            ("Why did the math book look so sad?", "Because it had too many problems."),
-            ("What do you call a pile of cats?", "A meowtain."),
-            ("Why do cows wear bells?", "Because their horns don't work."),
-            ("What did one wall say to the other?", "I'll meet you at the corner."),
-            ("Why do seagulls fly over the sea?", "Because if they flew over the bay they would be bagels."),
-            ("What do you call a factory that makes okay products?", "A satisfactory."),
-            ("Why did the golfer bring extra pants?", "In case he got a hole in one."),
-            ("What do you call a bear with no teeth?", "A gummy bear."),
-            ("What is a vampire's favourite fruit?", "A blood orange."),
-            ("Why are cats bad at poker?", "They always fold when they have a good hand."),
-        ]
-        print(f"  [D1] Using hardcoded fallback: {len(pairs)} pairs")
-
-    return pairs
+            instruction = str(item.get("instruction", "")).strip()
+            output = str(item.get("output", "")).strip()
+            
+            if not instruction or not output or len(instruction) < 10 or len(output) < 20:
+                continue
+            
+            # Adapt to roast format: "Give a roast about [instruction]" -> output
+            if len(instruction) > 5 and len(output) > 15:
+                roast_input = f"Roast this: {instruction}"
+                pairs.append((roast_input, output))
+                
+        print(f"  [D1] OpenHermes: {len(pairs):,} pairs")
+        return pairs
+    except Exception as e:
+        print(f"  [D1] OpenHermes failed: {e}")
+        return []
 
 
 # ── D2: HuggingFace roast-adjacent humor datasets ────────────
