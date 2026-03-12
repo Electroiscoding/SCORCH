@@ -1270,7 +1270,7 @@ def load_d4_wikihow_roasts():
 
 # ── MASTER LOADER ─────────────────────────────────────────────
 def load_all_datasets():
-    d1 = load_d1_jokes()
+    d1 = load_d1_openhermes()
     d2 = load_d2_humor()
     d3 = load_d3_comedy_central()
     d4 = load_d4_wikihow_roasts()
