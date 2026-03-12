@@ -1065,16 +1065,16 @@ def load_high_quality_roasts():
     # ── APPROACH 1: r/RoastMe from HuggingFace ──
     try:
         from datasets import load_dataset
-        ds = load_dataset("taboada/roast-me", split="train", trust_remote_code=True)
-        print(f"  Found roast-me dataset with {len(ds)} entries")
+        ds = load_dataset("kaifkhaan/roast", split="train", trust_remote_code=False)
+        print(f"  Found roast dataset with {len(ds)} entries")
 
         for idx, item in enumerate(ds):
             if idx >= 50000:  # Cap at 50K
                 break
 
             # Get the roast text (actual roast, not the post)
-            roast_text = item.get("roast", item.get("text", ""))
-            post_text  = item.get("post", item.get("title", ""))
+            roast_text = item.get("Roasting Bot", "")
+            post_text  = item.get("User", "")
 
             if not isinstance(roast_text, str) or not isinstance(post_text, str):
                 continue
@@ -2100,7 +2100,7 @@ print(f"{'='*60}\n")
 
 def generate_roast(model, tokenizer_obj, input_text,
                       max_len=65, T_base=0.75, alpha_T=0.3,
-                      beta_p=0.15, kappa_min=0.1, min_tokens=12,
+                      beta_p=0.15, min_tokens=12,
                       max_tokens=60):
     """
     Improved generation with better temperature control.
