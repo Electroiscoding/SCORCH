@@ -19,48 +19,56 @@ jobs:
         run: |
           node -e "
           const { chromium } = require('playwright');
+          const fs = require('fs');
 
           (async () => {
-            // 1. Launch browser & start high-quality recording
             const browser = await chromium.launch();
             const context = await browser.newContext({
               viewport: { width: 1280, height: 720 },
-              recordVideo: { dir: './videos/', size: { width: 1280, height: 720 } }
+              recordVideo: { dir: './videos/' }
             });
             const page = await context.newPage();
 
-            console.log('Stepping onto the web...');
+            try {
+              console.log('Navigating to profile...');
+              await page.goto('https://github.com', { waitUntil: 'networkidle' });
+              
+              // Human-like pause
+              await page.waitForTimeout(3000);
 
-            // 2. Human Action: Navigate
-            await page.goto('https://github.com', { waitUntil: 'networkidle' });
-            await page.waitForTimeout(2000);
+              console.log('Scrolling down...');
+              await page.evaluate(() => window.scrollBy(0, 500));
+              await page.waitForTimeout(2000);
 
-            // 3. Human Action: Smooth Scroll
-            console.log('Scrolling like a human...');
-            for (let i = 0; i < 5; i++) {
-              await page.mouse.wheel(0, 400);
-              await page.waitForTimeout(1000);
+              // Click the 'Overview' or 'Repositories' tab safely
+              console.log('Clicking Repositories...');
+              const repoTab = page.locator('a[data-tab-item=\"repositories\"]');
+              if (await repoTab.isVisible()) {
+                  await repoTab.click();
+              } else {
+                  // Fallback: just click the profile name
+                  await page.click('h1.vcard-names');
+              }
+              
+              await page.waitForTimeout(3000);
+              await page.screenshot({ path: 'final_view.png' });
+
+            } catch (err) {
+              console.error('Action failed, but saving video anyway: ', err);
+            } finally {
+              // Get video path BEFORE closing
+              const video = page.video();
+              const videoPath = await video.path();
+              
+              await context.close();
+              await browser.close();
+
+              // Final step: Rename video so it is easy to find
+              if (fs.existsSync(videoPath)) {
+                  fs.renameSync(videoPath, './human_activity.webm');
+                  console.log('Video saved as human_activity.webm');
+              }
             }
-
-            // 4. Human Action: Hover and Click
-            console.log('Interacting with elements...');
-            await page.hover('a[href*=\"repositories\"]');
-            await page.waitForTimeout(1000);
-            await page.click('a[href*=\"repositories\"]');
-            
-            // 5. Final Snapshot
-            await page.screenshot({ path: 'final_view.png', fullPage: true });
-
-            // 6. CLEAN SHUTDOWN (This prevents the corrupted video error)
-            await context.close();
-            await browser.close();
-            
-            // Rename the video file to something simple
-            const fs = require('fs');
-            const videoPath = await page.video().path();
-            fs.renameSync(videoPath, './human_activity.webm');
-            
-            console.log('Mission accomplished.');
           })();
           "
 
