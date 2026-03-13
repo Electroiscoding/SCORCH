@@ -1,41 +1,73 @@
-name: Record VM Video and Screenshot
+name: Ultimate VM Automation
 on: workflow_dispatch
 
 jobs:
-  capture-vm:
+  human-simulation:
     runs-on: ubuntu-latest
     steps:
-      - name: Install Tools
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install Playwright & Browsers
         run: |
-          sudo apt-get update
-          sudo apt-get install -y xvfb ffmpeg firefox imagemagick
+          npm install playwright
+          npx playwright install --with-deps chromium
 
-      - name: Start Recording and Browse
+      - name: Run Human-Like Automation
         run: |
-          # 1. Start virtual display (1920x1080)
-          Xvfb :99 -screen 0 1920x1080x24 &
-          export DISPLAY=:99
-          sleep 3
+          node -e "
+          const { chromium } = require('playwright');
 
-          # 2. Start Video Recording in background (Records for 15 seconds)
-          # -f x11grab: grabs the X11 screen
-          # -t 15: stops after 15 seconds
-          ffmpeg -y -f x11grab -video_size 1920x1080 -i :99 -codec:v libx264 -pix_fmt yuv420p vm_video.mp4 &
-          
-          # 3. Give the VM some "Work" - Open Firefox
-          firefox --width 1920 --height 1080 "https://github.com" &
-          
-          # 4. Wait for the recording to finish
-          echo "Recording in progress... please wait 15 seconds."
-          sleep 15
-          
-          # 5. Take a final screenshot of what's on screen now
-          import -window root final_screenshot.png
+          (async () => {
+            // 1. Launch browser & start high-quality recording
+            const browser = await chromium.launch();
+            const context = await browser.newContext({
+              viewport: { width: 1280, height: 720 },
+              recordVideo: { dir: './videos/', size: { width: 1280, height: 720 } }
+            });
+            const page = await context.newPage();
 
-      - name: Upload Video and Image
+            console.log('Stepping onto the web...');
+
+            // 2. Human Action: Navigate
+            await page.goto('https://github.com', { waitUntil: 'networkidle' });
+            await page.waitForTimeout(2000);
+
+            // 3. Human Action: Smooth Scroll
+            console.log('Scrolling like a human...');
+            for (let i = 0; i < 5; i++) {
+              await page.mouse.wheel(0, 400);
+              await page.waitForTimeout(1000);
+            }
+
+            // 4. Human Action: Hover and Click
+            console.log('Interacting with elements...');
+            await page.hover('a[href*=\"repositories\"]');
+            await page.waitForTimeout(1000);
+            await page.click('a[href*=\"repositories\"]');
+            
+            // 5. Final Snapshot
+            await page.screenshot({ path: 'final_view.png', fullPage: true });
+
+            // 6. CLEAN SHUTDOWN (This prevents the corrupted video error)
+            await context.close();
+            await browser.close();
+            
+            // Rename the video file to something simple
+            const fs = require('fs');
+            const videoPath = await page.video().path();
+            fs.renameSync(videoPath, './human_activity.webm');
+            
+            console.log('Mission accomplished.');
+          })();
+          "
+
+      - name: Upload Results
         uses: actions/upload-artifact@v4
         with:
-          name: vm-media-capture
+          name: vm-experience
           path: |
-            vm_video.mp4
-            final_screenshot.png
+            human_activity.webm
+            final_view.png
