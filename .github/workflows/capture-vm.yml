@@ -1,0 +1,29 @@
+name: Capture Linux VM Screenshot
+on: workflow_dispatch  # Allows manual trigger
+
+jobs:
+  screenshot-linux:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install Display Tools
+        run: sudo apt-get update && sudo apt-get install -y xvfb x11-apps imagemagick
+
+      - name: Capture Virtual Screen
+        run: |
+          # 1. Start a virtual display (Display :99)
+          Xvfb :99 -screen 0 1280x1024x24 &
+          export DISPLAY=:99
+          sleep 3
+          
+          # 2. Open an app so the screen isn't just black
+          xclock & 
+          sleep 2
+          
+          # 3. Use ImageMagick to capture the 'root' window
+          import -window root linux_vm_capture.png
+
+      - name: Upload Screenshot
+        uses: [actions/upload-artifact@v4](https://github.com/actions/upload-artifact)
+        with:
+          name: linux-screenshot
+          path: linux_vm_capture.png
