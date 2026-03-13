@@ -1,29 +1,41 @@
-name: Capture Linux VM Screenshot
+name: Record VM Video and Screenshot
 on: workflow_dispatch
 
 jobs:
-  screenshot-linux:
+  capture-vm:
     runs-on: ubuntu-latest
     steps:
-      - name: Install Display Tools
-        run: sudo apt-get update && sudo apt-get install -y xvfb x11-apps imagemagick
-
-      - name: Capture Virtual Screen
+      - name: Install Tools
         run: |
-          # 1. Start a virtual display (Display :99)
-          Xvfb :99 -screen 0 1280x1024x24 &
+          sudo apt-get update
+          sudo apt-get install -y xvfb ffmpeg firefox imagemagick
+
+      - name: Start Recording and Browse
+        run: |
+          # 1. Start virtual display (1920x1080)
+          Xvfb :99 -screen 0 1920x1080x24 &
           export DISPLAY=:99
           sleep 3
-          
-          # 2. Open an app so the screen isn't just black
-          xclock & 
-          sleep 2
-          
-          # 3. Use ImageMagick to capture the 'root' window
-          import -window root linux_vm_capture.png
 
-      - name: Upload Screenshot
+          # 2. Start Video Recording in background (Records for 15 seconds)
+          # -f x11grab: grabs the X11 screen
+          # -t 15: stops after 15 seconds
+          ffmpeg -y -f x11grab -video_size 1920x1080 -i :99 -codec:v libx264 -pix_fmt yuv420p vm_video.mp4 &
+          
+          # 3. Give the VM some "Work" - Open Firefox
+          firefox --width 1920 --height 1080 "https://github.com" &
+          
+          # 4. Wait for the recording to finish
+          echo "Recording in progress... please wait 15 seconds."
+          sleep 15
+          
+          # 5. Take a final screenshot of what's on screen now
+          import -window root final_screenshot.png
+
+      - name: Upload Video and Image
         uses: actions/upload-artifact@v4
         with:
-          name: linux-screenshot
-          path: linux_vm_capture.png
+          name: vm-media-capture
+          path: |
+            vm_video.mp4
+            final_screenshot.png
